@@ -16,9 +16,11 @@ fn main() {
     // ====== Input ======
     // 1st argument: private_key_hex (hex string, 64 characters) or wif_base58 (base58 WIF format)
     // 2nd argument (optional): "mainnet" | "testnet" (default is mainnet)
-    let input_key = env::args().nth(1).expect(
-        "Usage: zec_derive_zs_from_extsk <private_key_hex|wif_base58> [mainnet|testnet]",
-    );
+    let input_key = env::args().nth(1).unwrap_or_else(|| {
+        eprintln!("{} {} - (c) Decker, 2025", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+        eprintln!("\x1b[33mUsage:\x1b[0m {} <private_key_hex|wif_base58> [mainnet|testnet]", env!("CARGO_PKG_NAME"));
+        std::process::exit(1);
+    });
 
     let net = match env::args().nth(2).as_deref() {
         Some("testnet") => Network::TestNetwork,
