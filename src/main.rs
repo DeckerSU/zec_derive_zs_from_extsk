@@ -14,10 +14,10 @@ use zcash_primitives::{
 
 fn main() {
     // ====== Input ======
-    // 1st argument: iguana_key (hex string, 64 characters)
+    // 1st argument: iguana_key (hex string, 64 characters) or private key (base58 string)
     // 2nd argument (optional): "mainnet" | "testnet" (default is mainnet)
-    let iguana_key_hex = env::args().nth(1).expect(
-        "Usage: zec_derive_zs_from_extsk <iguana_key_hex> [mainnet|testnet]",
+    let input_key = env::args().nth(1).expect(
+        "Usage: zec_derive_zs_from_extsk <iguana_key_hex|private_key_base58> [mainnet|testnet]",
     );
 
     let net = match env::args().nth(2).as_deref() {
@@ -25,9 +25,58 @@ fn main() {
         _ => Network::MainNetwork,
     };
 
-    // ====== Decode iguana_key from hex string ======
-    let iguana_key: Vec<u8> = hex::decode(&iguana_key_hex)
-        .expect("Invalid hex string for iguana_key");
+    // ====== Decode iguana_key from hex string or base58 private key ======
+    let iguana_key: Vec<u8> = if input_key.len() == 64 && input_key.chars().all(|c| c.is_ascii_hexdigit()) {
+        // Hex format (64 hex characters = 32 bytes)
+        hex::decode(&input_key)
+            .expect("Invalid hex string for iguana_key")
+    } else {
+        // Base58 format (private key)
+        let decoded = bs58::decode(&input_key)
+            .into_vec()
+            .expect("Invalid base58 string for private key");
+        
+        // Print decoded bytes in hex
+        let decoded_hex = hex::encode(&decoded);
+        println!("Decoded base58 (hex): {}", decoded_hex);
+        
+        // Remove last 4 bytes (checksum) and take exactly 32 bytes from the end
+        if decoded.len() < 36 {
+            panic!("Decoded base58 key is too short (expected at least 36 bytes, got {})", decoded.len());
+        }
+        
+        // Remove checksum (last 4 bytes) first
+        let after_checksum = &decoded[..decoded.len() - 4];
+        
+        // Print after_checksum in hex
+        let after_checksum_hex = hex::encode(after_checksum);
+        println!("After checksum removed (hex): {}", after_checksum_hex);
+        
+        // Check minimum length: network_code (1) + privkey (32) + 0x01 (1) = 34 bytes
+        if after_checksum.len() < 34 {
+            panic!("Not a compressed WIF format (expected at least 34 bytes after checksum removal, got {})", after_checksum.len());
+        }
+        
+        // Check if last byte is 0x01 (compressed address flag)
+        let last_byte = after_checksum[after_checksum.len() - 1];
+        if last_byte != 0x01 {
+            panic!("Only compressed addresses are supported (last byte must be 0x01, got 0x{:02x})", last_byte);
+        }
+        
+        // Remove the last byte (0x01) for compressed addresses
+        let after_compressed_flag = &after_checksum[..after_checksum.len() - 1];
+        
+        // Take exactly the last 32 bytes from the end as without_checksum
+        let without_checksum = &after_compressed_flag[after_compressed_flag.len() - 32..];
+        
+        // Print without_checksum in hex (exactly 32 bytes)
+        let without_checksum_hex = hex::encode(without_checksum);
+        println!("Without checksum (hex): {}", without_checksum_hex);
+        
+        without_checksum.to_vec()
+    };
+    
+    let iguana_key_hex = hex::encode(&iguana_key);
 
     // ====== Create ExtendedSpendingKey from iguana_key ======
     let extsk = ExtendedSpendingKey::master(&iguana_key);
@@ -86,7 +135,8 @@ fn main() {
         Network::MainNetwork => "mainnet",
         Network::TestNetwork => "testnet",
     });
-    println!("iguana_key (hex): {}", iguana_key_hex);
+    // Yellow color for iguana_key label only
+    println!("\x1b[33miguana_key (hex):\x1b[0m {}", iguana_key_hex);
     println!("ask (SpendAuthorizingKey): {}", ask_hex);
     println!("nsk (NullifierSecretKey):  {}", nsk_hex);
     println!("ovk (OutgoingViewingKey): {}", ovk_hex);
@@ -98,8 +148,9 @@ fn main() {
     };
     let extsk_encoded = encode_extended_spending_key(hrp_extsk, &extsk);
 
-    println!("Full Viewing Key: {}", extfvk_encoded);
-    println!("Extended Spending Key: {}", extsk_encoded);
-    // Yellow color for ZS address: \x1b[33m for yellow, \x1b[0m to reset
-    println!("\x1b[33mZS address: {}\x1b[0m", zs);
+    // Yellow color for Full Viewing Key and Extended Spending Key labels only
+    println!("\x1b[33mFull Viewing Key:\x1b[0m {}", extfvk_encoded);
+    println!("\x1b[33mExtended Spending Key:\x1b[0m {}", extsk_encoded);
+    // Yellow color for ZS address label only
+    println!("\x1b[33mZS address:\x1b[0m {}", zs);
 }
