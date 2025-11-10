@@ -8,3 +8,7 @@ edition = "2021"
 zcash_primitives = "0.14"          # or current version
 # Key/address encoding/decoding utilities (bech32 "zs...", key strings)
 zcash_client_backend = "0.11"       # or current version
+# Hex encoding for byte arrays
+hex = "0.4"
+# Prime field trait for jubjub::Fr
+ff = "0.13"

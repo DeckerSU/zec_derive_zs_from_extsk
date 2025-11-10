@@ -1,5 +1,6 @@
-use std::env;
+use std::{env, io::Write};
 
+use ff::PrimeField;
 use zcash_client_backend::encoding::{
     decode_extended_spending_key, encode_extended_full_viewing_key, encode_payment_address,
 };
@@ -31,6 +32,32 @@ fn main() {
     let extsk = decode_extended_spending_key(hrp_extsk, &extsk_str)
         .expect("Invalid secret-extended-key for the selected network");
 
+    // ====== Extract all key component bytes ======
+    // Get ask (SpendAuthorizingKey) - 32 bytes
+    let expsk_bytes = extsk.expsk.to_bytes();
+    let ask_bytes: [u8; 32] = expsk_bytes[0..32].try_into().unwrap();
+    let ask_hex = hex::encode(ask_bytes);
+    
+    // Get nsk (Nullifier Secret Key) - 32 bytes from jubjub::Fr
+    let nsk_repr = extsk.expsk.nsk.to_repr();
+    let nsk_bytes: &[u8] = nsk_repr.as_ref();
+    let nsk_hex = hex::encode(nsk_bytes);
+    
+    // Get ovk (Outgoing Viewing Key) - 32 bytes
+    let ovk_bytes = extsk.expsk.ovk.0;
+    let ovk_hex = hex::encode(ovk_bytes);
+    
+    // Get dk (Diversifier Key) - 32 bytes
+    // Note: dk.0 is private, but we can access it through serialization
+    // or use the fact that ExtendedSpendingKey has a write method
+    // Let's serialize the whole key and extract dk from it
+    let mut serialized = Vec::new();
+    extsk.write(&mut serialized).unwrap();
+    // Format: depth (1) + parent_fvk_tag (4) + child_index (4) + chain_code (32) + fvk (96) + dk (32)
+    // dk is at offset: 1 + 4 + 4 + 32 + 96 = 137, length 32
+    let dk_bytes: [u8; 32] = serialized[137..169].try_into().unwrap();
+    let dk_hex = hex::encode(dk_bytes);
+
     // ====== Derive Full Viewing Key from Spending Key ======
     // ExtendedFullViewingKey for encoding
     let extfvk = extsk.to_extended_full_viewing_key();
@@ -59,6 +86,10 @@ fn main() {
         Network::MainNetwork => "mainnet",
         Network::TestNetwork => "testnet",
     });
+    println!("ask (SpendAuthorizingKey): {}", ask_hex);
+    println!("nsk (NullifierSecretKey):  {}", nsk_hex);
+    println!("ovk (OutgoingViewingKey): {}", ovk_hex);
+    println!("dk (DiversifierKey):       {}", dk_hex);
     println!("Full Viewing Key: {}", extfvk_encoded);
     println!("ZS address: {}", zs);
 }
