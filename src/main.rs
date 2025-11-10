@@ -249,9 +249,10 @@ mod tests {
 
     #[test]
     fn test_hd_derivation() {
+        // BIP39 mnemonic: "beyond quality alcohol install snake chalk deposit system baby present stock must"
         // BIP39 seed in hex format (128 hex characters = 64 bytes)
         let bip39_seed_hex = "e2881cf895a7adaa27bbe8ad5e1db2d1c654d8007f58b7828386eb05666a6ec512d1d8ba98d5d299cce1cf8fdbeb38ae6e7bdad4bb7b965715aeaf5af6d7df6c";
-        
+
         // Decode hex seed to bytes
         let bip39_seed = hex::decode(bip39_seed_hex).expect("Invalid hex string for BIP39 seed");
         
