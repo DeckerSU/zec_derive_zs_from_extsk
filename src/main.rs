@@ -1,8 +1,11 @@
 use std::{env, io::Write};
 
 use ff::PrimeField;
-use zcash_client_backend::encoding::{
-    decode_extended_spending_key, encode_extended_full_viewing_key, encode_payment_address,
+use zcash_client_backend::{
+    encoding::{
+        encode_extended_full_viewing_key, encode_extended_spending_key, encode_payment_address,
+    },
+    keys::sapling::ExtendedSpendingKey,
 };
 use zcash_primitives::{
     consensus::Network,
@@ -11,11 +14,10 @@ use zcash_primitives::{
 
 fn main() {
     // ====== Input ======
-    // 1st argument: secret-extended-key (string like
-    // "secret-extended-key-main1..." for mainnet or "...-test1..." for testnet)
+    // 1st argument: iguana_key (hex string, 64 characters)
     // 2nd argument (optional): "mainnet" | "testnet" (default is mainnet)
-    let extsk_str = env::args().nth(1).expect(
-        "Usage: zec_derive_zs_from_extsk <secret-extended-key> [mainnet|testnet]",
+    let iguana_key_hex = env::args().nth(1).expect(
+        "Usage: zec_derive_zs_from_extsk <iguana_key_hex> [mainnet|testnet]",
     );
 
     let net = match env::args().nth(2).as_deref() {
@@ -23,14 +25,12 @@ fn main() {
         _ => Network::MainNetwork,
     };
 
-    // ====== Decode EXTSK from human-readable string ======
-    // Returns ExtendedSpendingKey for the specified network
-    let hrp_extsk = match net {
-        Network::MainNetwork => constants::mainnet::HRP_SAPLING_EXTENDED_SPENDING_KEY,
-        Network::TestNetwork => constants::testnet::HRP_SAPLING_EXTENDED_SPENDING_KEY,
-    };
-    let extsk = decode_extended_spending_key(hrp_extsk, &extsk_str)
-        .expect("Invalid secret-extended-key for the selected network");
+    // ====== Decode iguana_key from hex string ======
+    let iguana_key: Vec<u8> = hex::decode(&iguana_key_hex)
+        .expect("Invalid hex string for iguana_key");
+
+    // ====== Create ExtendedSpendingKey from iguana_key ======
+    let extsk = ExtendedSpendingKey::master(&iguana_key);
 
     // ====== Extract all key component bytes ======
     // Get ask (SpendAuthorizingKey) - 32 bytes
@@ -86,10 +86,20 @@ fn main() {
         Network::MainNetwork => "mainnet",
         Network::TestNetwork => "testnet",
     });
+    println!("iguana_key (hex): {}", iguana_key_hex);
     println!("ask (SpendAuthorizingKey): {}", ask_hex);
     println!("nsk (NullifierSecretKey):  {}", nsk_hex);
     println!("ovk (OutgoingViewingKey): {}", ovk_hex);
     println!("dk (DiversifierKey):       {}", dk_hex);
+    // ====== Encode Extended Spending Key ======
+    let hrp_extsk = match net {
+        Network::MainNetwork => constants::mainnet::HRP_SAPLING_EXTENDED_SPENDING_KEY,
+        Network::TestNetwork => constants::testnet::HRP_SAPLING_EXTENDED_SPENDING_KEY,
+    };
+    let extsk_encoded = encode_extended_spending_key(hrp_extsk, &extsk);
+
     println!("Full Viewing Key: {}", extfvk_encoded);
-    println!("ZS address: {}", zs);
+    println!("Extended Spending Key: {}", extsk_encoded);
+    // Yellow color for ZS address: \x1b[33m for yellow, \x1b[0m to reset
+    println!("\x1b[33mZS address: {}\x1b[0m", zs);
 }
