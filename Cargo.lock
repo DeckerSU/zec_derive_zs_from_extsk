@@ -1731,6 +1731,7 @@ dependencies = [
 name = "zec_derive_zs_from_extsk"
 version = "0.1.0"
 dependencies = [
+ "bs58",
  "ff",
  "hex",
  "zcash_client_backend",

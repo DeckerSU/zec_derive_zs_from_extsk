@@ -10,5 +10,7 @@ zcash_primitives = "0.14"          # or current version
 zcash_client_backend = "0.11"       # or current version
 # Hex encoding for byte arrays
 hex = "0.4"
+# Base58 encoding/decoding
+bs58 = "0.5"
 # Prime field trait for jubjub::Fr
 ff = "0.13"
