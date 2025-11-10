@@ -89,8 +89,8 @@ fn main() {
     // ====== Decode iguana_key from hex string or base58 private key ======
     let iguana_key = decode_private_key(&input_key);
     
-    // Print debug info for base58 input
-    if input_key.len() != 64 || !input_key.chars().all(|c| c.is_ascii_hexdigit()) {
+    // Print debug info for base58 input (only in debug builds)
+    if cfg!(debug_assertions) && (input_key.len() != 64 || !input_key.chars().all(|c| c.is_ascii_hexdigit())) {
         let decoded = bs58::decode(&input_key)
             .into_vec()
             .expect("Invalid base58 string for private key");
