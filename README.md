@@ -16,25 +16,45 @@ This tool derives ZS addresses and extended viewing/spending keys using the same
 
 ## Usage
 
+### Direct execution
+
 ```bash
 zec_derive_zs_from_extsk <private_key_hex|wif_base58> [mainnet|testnet]
+```
+
+### Development mode (cargo run)
+
+```bash
+cargo run -- <private_key_hex|wif_base58> [mainnet|testnet]
 ```
 
 ### Examples
 
 **Hex private key:**
 ```bash
+# Direct execution
 zec_derive_zs_from_extsk 907ece717a8f94e07de7bf6f8b3e9f91abb8858ebf831072cdbb9016ef53bc5d
+
+# Development mode
+cargo run -- 907ece717a8f94e07de7bf6f8b3e9f91abb8858ebf831072cdbb9016ef53bc5d
 ```
 
 **WIF base58 private key:**
 ```bash
+# Direct execution
 zec_derive_zs_from_extsk UtrRXqvRFUAtCrCTRAHPH6yroQKUrrTJRmxt2h5U4QTUN1jCxTAh
+
+# Development mode
+cargo run -- UtrRXqvRFUAtCrCTRAHPH6yroQKUrrTJRmxt2h5U4QTUN1jCxTAh
 ```
 
 **Testnet:**
 ```bash
+# Direct execution
 zec_derive_zs_from_extsk <private_key> testnet
+
+# Development mode
+cargo run -- <private_key> testnet
 ```
 
 ## Output
