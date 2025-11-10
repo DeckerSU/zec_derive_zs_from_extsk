@@ -1,4 +1,4 @@
-use std::{env, io::Write};
+use std::env;
 
 use ff::PrimeField;
 use zcash_client_backend::{
@@ -14,10 +14,10 @@ use zcash_primitives::{
 
 fn main() {
     // ====== Input ======
-    // 1st argument: iguana_key (hex string, 64 characters) or private key (base58 string)
+    // 1st argument: private_key_hex (hex string, 64 characters) or wif_base58 (base58 WIF format)
     // 2nd argument (optional): "mainnet" | "testnet" (default is mainnet)
     let input_key = env::args().nth(1).expect(
-        "Usage: zec_derive_zs_from_extsk <iguana_key_hex|private_key_base58> [mainnet|testnet]",
+        "Usage: zec_derive_zs_from_extsk <private_key_hex|wif_base58> [mainnet|testnet]",
     );
 
     let net = match env::args().nth(2).as_deref() {
@@ -108,10 +108,11 @@ fn main() {
     let dk_hex = hex::encode(dk_bytes);
 
     // ====== Derive Full Viewing Key from Spending Key ======
-    // ExtendedFullViewingKey for encoding
-    let extfvk = extsk.to_extended_full_viewing_key();
     // DiversifiableFullViewingKey for address generation
     let fvk = extsk.to_diversifiable_full_viewing_key();
+    // ExtendedFullViewingKey for encoding (using deprecated method as it's needed for encoding)
+    #[allow(deprecated)]
+    let extfvk = extsk.to_extended_full_viewing_key();
 
     // ====== Find first valid diversifier and address ======
     // default_address() will find the first valid diversifier and return PaymentAddress
