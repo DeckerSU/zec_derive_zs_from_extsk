@@ -177,6 +177,8 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use zcash_primitives::zip32::ChildIndex;
+
     use super::*;
 
     #[test]
@@ -243,5 +245,34 @@ mod tests {
         let iguana_key_from_hex = decode_private_key(hex_key);
         
         assert_eq!(iguana_key_from_wif, iguana_key_from_hex);
+    }
+
+    #[test]
+    fn test_hd_derivation() {
+        // BIP39 seed in hex format (128 hex characters = 64 bytes)
+        let bip39_seed_hex = "e2881cf895a7adaa27bbe8ad5e1db2d1c654d8007f58b7828386eb05666a6ec512d1d8ba98d5d299cce1cf8fdbeb38ae6e7bdad4bb7b965715aeaf5af6d7df6c";
+        
+        // Decode hex seed to bytes
+        let bip39_seed = hex::decode(bip39_seed_hex).expect("Invalid hex string for BIP39 seed");
+        
+        // Create master key from BIP39 seed
+        let extsk_master = ExtendedSpendingKey::master(&bip39_seed);
+        
+        // Derive child key at path "m/32'/141'/0'"
+        let derivation_path = [ChildIndex::hardened(32), ChildIndex::hardened(141), ChildIndex::hardened(0)];
+        
+        let extsk = ExtendedSpendingKey::from_path(&extsk_master, &derivation_path);
+        
+        // Get Full Viewing Key and derive address
+        let fvk = extsk.to_diversifiable_full_viewing_key();
+        let (_diversifier_index, payment_address) = fvk.default_address();
+        
+        // Encode Sapling address
+        let hrp = "zs"; // mainnet
+        let zs_address = encode_payment_address(hrp, &payment_address);
+        
+        // Verify the expected ZS address
+        let expected_zs = "zs10zumm23c5q6fn8qf60v022kfxdfyunxpnya2ezmextu0ups4qvfdnmssmfeuwy3vcesx224x0st";
+        assert_eq!(zs_address, expected_zs);
     }
 }
